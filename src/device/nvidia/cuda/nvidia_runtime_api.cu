@@ -1,10 +1,10 @@
-#include "../runtime_api.hpp"
+#include "../../runtime_api.hpp"
 
 #include <cstdlib>
 #include <cstring>
 
 namespace llaisys::device::nvidia {
-
+namespace cuda {
 namespace runtime_api {
 int getDeviceCount() {
     TO_BE_IMPLEMENTED();
@@ -49,7 +49,7 @@ void memcpySync(void *dst, const void *src, size_t size, llaisysMemcpyKind_t kin
     TO_BE_IMPLEMENTED();
 }
 
-void memcpyAsync(void *dst, const void *src, size_t size, llaisysMemcpyKind_t kind) {
+void memcpyAsync(void *dst, const void *src, size_t size, llaisysMemcpyKind_t kind, llaisysStream_t stream) {
     TO_BE_IMPLEMENTED();
 }
 
@@ -72,4 +72,6 @@ static const LlaisysRuntimeAPI RUNTIME_API = {
 const LlaisysRuntimeAPI *getRuntimeAPI() {
     return &runtime_api::RUNTIME_API;
 }
+
+} // namespace cuda
 } // namespace llaisys::device::nvidia

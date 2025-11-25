@@ -12,9 +12,18 @@ namespace cpu {
 const LlaisysRuntimeAPI *getRuntimeAPI();
 }
 
-#ifdef ENABLE_NVIDIA_API
+#if defined(ENABLE_NVIDIA_TRITON_API) || defined(ENABLE_NVIDIA_CUDA_API)
 namespace nvidia {
-const LlaisysRuntimeAPI *getRuntimeAPI();
-}
+#ifdef ENABLE_NVIDIA_CUDA_API
+namespace cuda {
+    const LlaisysRuntimeAPI *getRuntimeAPI();
+} // namespace cuda
+#endif
+#ifdef ENABLE_NVIDIA_TRITON_API
+namespace triton {
+    const LlaisysRuntimeAPI *getRuntimeAPI();
+} // namespace triton
+#endif
+} // namespace nvidia
 #endif
 } // namespace llaisys::device

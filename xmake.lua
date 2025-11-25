@@ -7,15 +7,26 @@ add_includedirs("include")
 includes("xmake/cpu.lua")
 
 -- NVIDIA --
-option("nv-gpu")
+option("nv-gpu-cuda")
     set_default(false)
     set_showmenu(true)
-    set_description("Whether to compile implementations for Nvidia GPU")
+    set_description("Whether to compile implementations for Nvidia GPU with CUDA")
 option_end()
 
-if has_config("nv-gpu") then
-    add_defines("ENABLE_NVIDIA_API")
-    includes("xmake/nvidia.lua")
+if has_config("nv-gpu-cuda") then
+    add_defines("ENABLE_NVIDIA_CUDA_API")
+    includes("xmake/nvidia_cuda.lua")
+end
+
+option("nv-gpu-triton")
+    set_default(false)
+    set_showmenu(true)
+    set_description("Whether to compile implementations for Nvidia GPU with Triton")
+option_end()
+
+if has_config("nv-gpu-triton") then
+    add_defines("ENABLE_NVIDIA_TRITON_API")
+    includes("xmake/nvidia_triton.lua")
 end
 
 target("llaisys-utils")
@@ -37,6 +48,12 @@ target("llaisys-device")
     set_kind("static")
     add_deps("llaisys-utils")
     add_deps("llaisys-device-cpu")
+    if has_config("nv-gpu-cuda") then
+        add_deps("llaisys-device-nvidia-cuda")
+    end
+    if has_config("nv-gpu-triton") then
+        add_deps("llaisys-device-nvidia-triton")
+    end
 
     set_languages("cxx17")
     set_warnings("all", "error")
@@ -83,6 +100,12 @@ target_end()
 target("llaisys-ops")
     set_kind("static")
     add_deps("llaisys-ops-cpu")
+    if has_config("nv-gpu-cuda") then
+        add_deps("llaisys-ops-nvidia-cuda")
+    end
+    if has_config("nv-gpu-triton") then
+        add_deps("llaisys-ops-nvidia-triton")
+    end
 
     set_languages("cxx17")
     set_warnings("all", "error")
