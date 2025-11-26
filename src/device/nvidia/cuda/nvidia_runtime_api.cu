@@ -3,8 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 
-namespace llaisys::device::nvidia {
-namespace cuda {
+namespace llaisys::device::nvidia::cuda {
 namespace runtime_api {
 int getDeviceCount() {
     TO_BE_IMPLEMENTED();
@@ -73,5 +72,4 @@ const LlaisysRuntimeAPI *getRuntimeAPI() {
     return &runtime_api::RUNTIME_API;
 }
 
-} // namespace cuda
-} // namespace llaisys::device::nvidia
+} // namespace llaisys::device::nvidia::cuda

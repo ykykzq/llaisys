@@ -2,10 +2,10 @@
 
 #include "../../device_resource.hpp"
 
-namespace llaisys::device::nvidia::cuda {
+namespace llaisys::device::nvidia::triton {
 class Resource : public llaisys::device::DeviceResource {
 public:
     Resource(int device_id);
-    ~Resource();
+    ~Resource() = default;
 };
-} // namespace llaisys::device::nvidia::cuda
+} // namespace llaisys::device::nvidia::triton

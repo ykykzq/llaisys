@@ -20,7 +20,7 @@ target("llaisys-ops-nvidia-cuda")
         add_cxflags("-fPIC", "-Wno-unknown-pragmas")
     end
 
-    add_files("../src/ops/*/cuda/*.cu")
+    add_files("../src/ops/*/nvidia/cuda/*.cu")
 
     on_install(function (target) end)
 target_end()

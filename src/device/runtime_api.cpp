@@ -6,7 +6,7 @@ int getDeviceCount() {
     return 0;
 }
 
-void setDevice(int) {
+void setDevice(int device_id) {
     EXCEPTION_UNSUPPORTED_DEVICE;
 }
 
@@ -72,12 +72,15 @@ const LlaisysRuntimeAPI *getUnsupportedRuntimeAPI() {
 
 const LlaisysRuntimeAPI *getRuntimeAPI(llaisysDeviceType_t device_type) {
     // Implement for all device types
+    
     switch (device_type) {
     case LLAISYS_DEVICE_CPU:
         return llaisys::device::cpu::getRuntimeAPI();
     case LLAISYS_DEVICE_NVIDIA:
-#ifdef ENABLE_NVIDIA_API
-        return llaisys::device::nvidia::getRuntimeAPI();
+#if defined(ENABLE_NVIDIA_CUDA_API)
+        return llaisys::device::nvidia::cuda::getRuntimeAPI();
+#elif defined(ENABLE_NVIDIA_TRITON_API)
+        return llaisys::device::nvidia::triton::getRuntimeAPI();
 #else
         return getUnsupportedRuntimeAPI();
 #endif

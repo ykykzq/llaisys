@@ -6,6 +6,12 @@ target("llaisys-device-nvidia-triton")
         add_cxflags("-fPIC", "-Wno-unknown-pragmas")
     end
 
+    -- add CUDA dependencies
+    add_includedirs("/usr/local/cuda/include")
+    add_linkdirs("/usr/local/cuda/lib64")
+    add_links("cudart")
+    add_syslinks("dl")
+
     add_files("../src/device/nvidia/triton/*.cpp")
 
     on_install(function (target) end)
@@ -20,7 +26,7 @@ target("llaisys-ops-nvidia-triton")
         add_cxflags("-fPIC", "-Wno-unknown-pragmas")
     end
 
-    add_files("../src/ops/*/triton/*.cpp")
+    add_files("../src/ops/*/nvidia/triton/*.cpp")
 
     on_install(function (target) end)
 target_end()
