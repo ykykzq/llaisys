@@ -5,6 +5,7 @@ target("llaisys-device-nvidia-cuda")
     if not is_plat("windows") then
         add_cxflags("-fPIC", "-Wno-unknown-pragmas")
         add_cuflags("-Xcompiler", "-fPIC", "-Wno-deprecated-gpu-targets", {force = true})
+        add_culdflags("-Xcompiler=-fPIC", {force = true})
     end
 
     -- add CUDA dependencies
@@ -14,6 +15,8 @@ target("llaisys-device-nvidia-cuda")
     add_syslinks("dl")
     
     add_files("../src/device/nvidia/cuda/*.cu")
+    
+    set_policy("build.cuda.devlink", true)
 
     on_install(function (target) end)
 target_end()
@@ -26,9 +29,11 @@ target("llaisys-ops-nvidia-cuda")
     if not is_plat("windows") then
         add_cxflags("-fPIC", "-Wno-unknown-pragmas")
         add_cuflags("-Xcompiler", "-fPIC", "-Wno-deprecated-gpu-targets", {force = true})
+        add_culdflags("-Xcompiler=-fPIC", {force = true})
     end
 
     add_files("../src/ops/*/nvidia/cuda/*.cu")
+    set_policy("build.cuda.devlink", true)
 
     on_install(function (target) end)
 target_end()
