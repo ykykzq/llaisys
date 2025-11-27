@@ -103,9 +103,6 @@ target("llaisys-ops")
     if has_config("nv-gpu-cuda") then
         add_deps("llaisys-ops-nvidia-cuda")
     end
-    if has_config("nv-gpu-triton") then
-        add_deps("llaisys-ops-nvidia-triton")
-    end
 
     set_languages("cxx17")
     set_warnings("all", "error")

@@ -13,6 +13,7 @@ from .tensor import llaisysTensor_t
 from .tensor import load_tensor
 from .ops import load_ops
 import ninetoothed as NINETOOTHED
+import triton as TRITON
 
 def load_shared_library():
     lib_dir = Path(__file__).parent

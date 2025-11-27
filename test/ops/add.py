@@ -6,6 +6,7 @@ sys.path.insert(0, parent_dir)
 import llaisys
 import torch
 from test_utils import random_tensor, check_equal, benchmark
+from llaisys.libllaisys.triton.setup_kernels import llaisysAdd
 
 
 def torch_add(ans, a, b):
@@ -26,14 +27,15 @@ def test_op_add(
 
     c, c_ = random_tensor(shape, dtype_name, device_name)
     torch_add(c, a, b)
-    llaisys.Ops.add(c_, a_, b_)
+    #llaisys.Ops.add(c_, a_, b_)
+    llaisysAdd(a_, b_, c_)
 
     assert check_equal(c_, c, atol=atol, rtol=rtol)
 
     if profile:
         benchmark(
             lambda: torch_add(c, a, b),
-            lambda: llaisys.Ops.add(c_, a_, b_),
+            lambda: llaisysAdd(a_, b_, c_),
             device_name,
         )
 

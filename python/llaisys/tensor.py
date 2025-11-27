@@ -70,7 +70,14 @@ class Tensor:
         LIB_LLAISYS.tensorDebug(self._tensor)
 
     def __repr__(self):
-        return f"<Tensor shape={self.shape}, dtype={self.dtype}, device={self.device_type}:{self.device_id}>"
+        try:
+            shape_val = self.shape()
+            dtype_val = self.dtype()
+            device_type_val = self.device_type()
+            device_id_val = self.device_id()
+            return f"<Tensor shape={shape_val}, dtype={dtype_val}, device={device_type_val}:{device_id_val}>"
+        except Exception:
+            return f"<Tensor object at {hex(id(self))}>"
 
     def load(self, data: c_void_p):
         LIB_LLAISYS.tensorLoad(self._tensor, data)
