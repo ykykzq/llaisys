@@ -1,6 +1,7 @@
 import triton
 import triton.language as tl
 from .kernels import add
+from .kernels import argmax
 from ...libllaisys.llaisys_types import DataType
 
 
@@ -63,3 +64,21 @@ def llaisysAdd(x, y, output):
     )
 
     return output
+
+# 目前只支持1D tensor
+def llaisysArgmax(vals, max_idx, max_val):
+    assert len(vals.shape()) == len(max_idx.shape()) == len(max_val.shape()) == 1
+
+    len_vals = vals.shape()[0]
+    triton_dtype = _llaisys_dtype_to_triton_dtype(vals.dtype())
+    idx_dtype = _llaisys_dtype_to_triton_dtype(max_idx.dtype())
+
+    def grid(meta):
+        return (1, 1)
+
+    vals_ptr = vals.data_ptr()
+    max_idx_ptr = max_idx.data_ptr()
+    max_val_ptr = max_val.data_ptr()
+
+    argmax.kernel[grid](vals_ptr, max_idx_ptr, max_val_ptr, len_vals, DTYPE=triton_dtype, IDX_DTYPE=idx_dtype)
+    return max_idx, max_val
