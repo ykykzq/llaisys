@@ -6,6 +6,7 @@ from .kernels import argmax
 from .kernels import self_attention
 from .kernels import swiglu
 from .kernels import linear
+from .kernels import embedding
 from ...libllaisys.llaisys_types import DataType
 
 
@@ -183,6 +184,32 @@ def llaisysLinear(out, x, weight, bias):
         weight_ptr, bias_ptr, 
         *out.strides(), *x.strides(), *weight.strides(), 
         len_m, len_n, len_k, 
+        DTYPE=dtype,
+    )
+    return out
+
+# the ligality of the index element should be ensured by the user
+def llaisysEmbedding(out, index, weight):
+    assert index.dtype() == DataType.I64
+
+    len_n, len_d = out.shape()
+    len_v, _ = weight.shape()
+
+    out_ptr = out.data_ptr()
+    index_ptr = index.data_ptr()
+    weight_ptr = weight.data_ptr()
+    dtype = _llaisys_dtype_to_triton_dtype(out.dtype())
+
+    def grid(meta):
+        return (
+        triton.cdiv(len_n, meta["BLOCK_SIZE_N"]),
+        triton.cdiv(len_d, meta["BLOCK_SIZE_D"]),
+    )
+
+    embedding.kernel[grid](
+        out_ptr, index_ptr, weight_ptr,
+        *out.strides(), *index.strides(), *weight.strides(),
+        len_n, len_d, len_v,
         DTYPE=dtype,
     )
     return out
