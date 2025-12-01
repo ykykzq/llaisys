@@ -1,7 +1,10 @@
+import math
 import triton
 import triton.language as tl
 from .kernels import add
 from .kernels import argmax
+from .kernels import self_attention
+from .kernels import reshape
 from ...libllaisys.llaisys_types import DataType
 
 
@@ -70,7 +73,7 @@ def llaisysArgmax(vals, max_idx, max_val):
     assert len(vals.shape()) == len(max_idx.shape()) == len(max_val.shape()) == 1
 
     len_vals = vals.shape()[0]
-    triton_dtype = _llaisys_dtype_to_triton_dtype(vals.dtype())
+    val_dtype = _llaisys_dtype_to_triton_dtype(vals.dtype())
     idx_dtype = _llaisys_dtype_to_triton_dtype(max_idx.dtype())
 
     def grid(meta):
@@ -80,5 +83,50 @@ def llaisysArgmax(vals, max_idx, max_val):
     max_idx_ptr = max_idx.data_ptr()
     max_val_ptr = max_val.data_ptr()
 
-    argmax.kernel[grid](vals_ptr, max_idx_ptr, max_val_ptr, len_vals, DTYPE=triton_dtype, IDX_DTYPE=idx_dtype)
+    argmax.kernel[grid](vals_ptr, max_idx_ptr, max_val_ptr, len_vals, DTYPE=val_dtype, IDX_DTYPE=idx_dtype)
     return max_idx, max_val
+
+
+# 暂时不考虑batch维度
+# require embed_dim >= 16
+# causal + group query attention
+def llaisysSelfAttention(o, q, k, v, scale=None):
+    seq_len_q, num_q_heads, emb_dim = q.shape()
+    seq_len_k_v, num_kv_heads, _ = k.shape()
+
+    if scale is None:
+        scale = 1 / math.sqrt(emb_dim)
+
+    assert num_q_heads % num_kv_heads == 0
+    group_size = num_q_heads // num_kv_heads
+
+    o_ptr = o.data_ptr()
+    q_ptr = q.data_ptr()
+    k_ptr = k.data_ptr()
+    v_ptr = v.data_ptr()
+    dtype = _llaisys_dtype_to_triton_dtype(o.dtype())
+
+    def grid(meta):
+        return (
+            triton.cdiv(seq_len_q, meta["BLOCK_SIZE_M"]),
+            num_q_heads,
+        )
+
+    self_attention.kernel[grid](
+        q_ptr,
+        k_ptr,
+        v_ptr,
+        o_ptr,
+        *q.strides(),
+        *k.strides(),
+        *v.strides(),
+        *o.strides(),
+        scale=scale,
+        seq_len_q=seq_len_q,
+        seq_len_k_v=seq_len_k_v,
+        group_size=group_size,
+        EMB_DIM=emb_dim,
+        DTYPE=dtype,
+    )
+
+    return o

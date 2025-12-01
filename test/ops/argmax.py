@@ -36,7 +36,7 @@ def test_op_argmax(
     if profile:
         benchmark(
             lambda: torch_argmax(max_idx, max_val, vals),
-            lambda: llaisys.Ops.argmax(max_idx_, max_val_, vals_),
+            lambda: llaisysArgmax(max_idx_, max_val_, vals_),
             device_name,
         )
 

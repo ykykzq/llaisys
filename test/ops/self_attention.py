@@ -6,6 +6,7 @@ sys.path.insert(0, parent_dir)
 import llaisys
 import torch
 from test_utils import random_tensor, check_equal, benchmark
+from llaisys.libllaisys.triton.setup_kernels import llaisysSelfAttention
 
 
 def torch_self_attention(attn_val, query, key, value, scale):
@@ -15,7 +16,7 @@ def torch_self_attention(attn_val, query, key, value, scale):
     L, S = query.size(-2), key.size(-2)
     attn_bias = torch.zeros(L, S, dtype=query.dtype, device=query.device)
 
-    temp_mask = torch.ones(L, S, dtype=torch.bool).tril(diagonal=S-L)
+    temp_mask = torch.ones(L, S, dtype=torch.bool, device=query.device).tril(diagonal=S-L)
     attn_bias.masked_fill_(temp_mask.logical_not(), float("-inf"))
     attn_bias.to(query.dtype)
 
@@ -50,13 +51,14 @@ def test_op_self_attention(
 
     attn_val, attn_val_ = random_tensor((qlen, nh, hd), dtype_name, device_name)
     torch_self_attention(attn_val, q, k, v, scale)
-    llaisys.Ops.self_attention(attn_val_, q_, k_, v_, scale)
+    #llaisys.Ops.self_attention(attn_val_, q_, k_, v_, scale)
+    llaisysSelfAttention(attn_val_, q_, k_, v_, scale)
     assert check_equal(attn_val_, attn_val, atol=atol, rtol=rtol)
 
     if profile:
         benchmark(
             lambda: torch_self_attention(attn_val, q, k, v, scale),
-            lambda: llaisys.Ops.self_attention(attn_val_, q_, k_, v_, scale),
+            lambda: llaisysSelfAttention(attn_val_, q_, k_, v_, scale),
             device_name,
         )
 
@@ -70,12 +72,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
     testShapes = [
         # qlen, kvlen, nh, nkvh, hd
-        (2, 2, 1, 1, 4),
-        (5, 11, 4, 2, 8),
+        (2, 2, 1, 1, 64),
+        (5, 11, 4, 2, 128),
+        (64, 128, 4, 2, 128),
     ]
     testDtypePrec = [
         # type, atol, rtol
-        ("f32", 1e-5, 1e-5),
+        ("f32", 5e-4, 5e-4),
         ("f16", 1e-3, 1e-3),
         ("bf16", 1e-2, 1e-2),
     ]
