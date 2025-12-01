@@ -4,7 +4,7 @@ import triton.language as tl
 from .kernels import add
 from .kernels import argmax
 from .kernels import self_attention
-from .kernels import reshape
+from .kernels import swiglu
 from ...libllaisys.llaisys_types import DataType
 
 
@@ -130,3 +130,29 @@ def llaisysSelfAttention(o, q, k, v, scale=None):
     )
 
     return o
+
+def llaisysSwiGLU(out, gate, up):
+    seqlen, intermediate_size = out.shape()
+    out_ptr = out.data_ptr()
+    gate_ptr = gate.data_ptr()
+    up_ptr = up.data_ptr()
+    dtype = _llaisys_dtype_to_triton_dtype(out.dtype())
+
+    def grid(meta):
+        return (
+            triton.cdiv(seqlen, meta["BLOCK_SIZE_M"]),
+            triton.cdiv(intermediate_size, meta["BLOCK_SIZE_N"]),
+        )
+
+    swiglu.kernel[grid](
+        out_ptr, 
+        gate_ptr, 
+        up_ptr, 
+        *out.strides(), 
+        *gate.strides(), 
+        *up.strides(), 
+        seqlen, 
+        intermediate_size, 
+        DTYPE=dtype,
+    )
+    return out

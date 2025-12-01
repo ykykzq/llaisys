@@ -3,10 +3,9 @@ import os
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, parent_dir)
-import llaisys
 import torch
 from test_utils import random_tensor, check_equal, benchmark
-
+from llaisys.libllaisys.triton.setup_kernels import llaisysSwiGLU
 
 def torch_swiglu(out, gate, up):
     torch.mul(up, gate / (1 + torch.exp(-gate.float()).to(out.dtype)), out=out)
@@ -26,14 +25,14 @@ def test_op_swiglu(
 
     out, out_ = random_tensor(shape, dtype_name, device_name)
     torch_swiglu(out, gate, up)
-    llaisys.Ops.swiglu(out_, gate_, up_)
+    llaisysSwiGLU(out_, gate_, up_)
 
     assert check_equal(out_, out, atol=atol, rtol=rtol)
 
     if profile:
         benchmark(
             lambda: torch_swiglu(out, gate, up),
-            lambda: llaisys.Ops.swiglu(out_, gate_, up_),
+            lambda: llaisysSwiGLU(out_, gate_, up_),
             device_name,
         )
 
