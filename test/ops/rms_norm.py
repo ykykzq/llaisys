@@ -6,6 +6,7 @@ sys.path.insert(0, parent_dir)
 import llaisys
 import torch
 from test_utils import random_tensor, check_equal, benchmark
+from llaisys.libllaisys.triton.setup_kernels import llaisysRMSNorm
 
 
 def torch_rms_norm(ans, x, w, eps):
@@ -32,14 +33,14 @@ def test_op_rms_norm(
 
     c, c_ = random_tensor(shape, dtype_name, device_name)
     torch_rms_norm(c, x, w, eps)
-    llaisys.Ops.rms_norm(c_, x_, w_, eps)
+    llaisysRMSNorm(c_, x_, w_, eps)
 
     assert check_equal(c_, c, atol=atol, rtol=rtol)
 
     if profile:
         benchmark(
             lambda: torch_rms_norm(c, x, w, eps),
-            lambda: llaisys.Ops.rms_norm(c_, x_, w_, eps),
+            lambda: llaisysRMSNorm(c_, x_, w_, eps),
             device_name,
         )
 

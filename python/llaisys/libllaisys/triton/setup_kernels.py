@@ -7,6 +7,7 @@ from .kernels import self_attention
 from .kernels import swiglu
 from .kernels import linear
 from .kernels import embedding
+from .kernels import rms_norm
 from ...libllaisys.llaisys_types import DataType
 
 
@@ -213,3 +214,22 @@ def llaisysEmbedding(out, index, weight):
         DTYPE=dtype,
     )
     return out
+
+def llaisysRMSNorm(out, x, weight, eps):
+    len_m, len_n = out.shape()
+
+    out_ptr = out.data_ptr()
+    x_ptr = x.data_ptr()
+    weight_ptr = weight.data_ptr()
+    dtype = _llaisys_dtype_to_triton_dtype(out.dtype())
+
+    def grid(meta):
+        return (
+            triton.cdiv(len_m, meta["BLOCK_SIZE_M"]),
+        )
+
+    rms_norm.kernel[grid](
+        out_ptr, x_ptr, weight_ptr, eps,
+        *out.strides(), *x.strides(), *weight.strides(),
+        len_m, len_n, DTYPE=dtype,
+    )
