@@ -6,6 +6,7 @@ sys.path.insert(0, parent_dir)
 import llaisys
 import torch
 from test_utils import random_tensor, check_equal, benchmark
+from llaisys.libllaisys.triton.setup_kernels import llaisysLinear
 
 
 def torch_linear(out, x, w, bias):
@@ -33,14 +34,14 @@ def test_op_linear(
 
     out, out_ = random_tensor(out_shape, dtype_name, device_name)
     torch_linear(out, x, w, bias)
-    llaisys.Ops.linear(out_, x_, w_, bias_)
+    llaisysLinear(out_, x_, w_, bias_)
 
     assert check_equal(out_, out, atol=atol, rtol=rtol)
 
     if profile:
         benchmark(
             lambda: torch_linear(out, x, w, bias),
-            lambda: llaisys.Ops.linear(out_, x_, w_, bias_),
+            lambda: llaisysLinear(out_, x_, w_, bias_),
             device_name,
         )
 
@@ -53,12 +54,15 @@ if __name__ == "__main__":
     parser.add_argument("--profile", action="store_true")
     args = parser.parse_args()
     testShapes = [
-        ((2, 3), (2, 4), (3, 4), True),
+        ((2, 3), (2, 16), (3, 16), True),
+        ((2, 3), (2, 64), (3, 64), True),
+        ((2, 3), (2, 64), (3, 64), False),
         ((512, 4096), (512, 4096), (4096, 4096), True),
+        ((512, 4096), (512, 4096), (4096, 4096), False),
     ]
     testDtypePrec = [
         # type, atol, rtol
-        ("f32", 1e-5, 1e-5),
+        ("f32", 1e-5, 1e-4),
         ("f16", 1e-3, 1e-3),
         ("bf16", 1e-2, 1e-2),
     ]

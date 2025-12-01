@@ -5,6 +5,7 @@ from .kernels import add
 from .kernels import argmax
 from .kernels import self_attention
 from .kernels import swiglu
+from .kernels import linear
 from ...libllaisys.llaisys_types import DataType
 
 
@@ -153,6 +154,35 @@ def llaisysSwiGLU(out, gate, up):
         *up.strides(), 
         seqlen, 
         intermediate_size, 
+        DTYPE=dtype,
+    )
+    return out
+
+def llaisysLinear(out, x, weight, bias):
+    len_m, len_n = out.shape()
+    _, len_k = weight.shape()
+
+    out_ptr = out.data_ptr()
+    x_ptr = x.data_ptr()
+    weight_ptr = weight.data_ptr() 
+    if bias is not None:
+        bias_ptr = bias.data_ptr()
+    else:
+        bias_ptr = None
+    dtype = _llaisys_dtype_to_triton_dtype(out.dtype())
+
+    def grid(meta):
+        return (
+            triton.cdiv(len_m, meta["BLOCK_SIZE_M"]),
+            triton.cdiv(len_n, meta["BLOCK_SIZE_N"]),
+        )
+
+
+    linear.kernel[grid](
+        out_ptr, x_ptr, 
+        weight_ptr, bias_ptr, 
+        *out.strides(), *x.strides(), *weight.strides(), 
+        len_m, len_n, len_k, 
         DTYPE=dtype,
     )
     return out
