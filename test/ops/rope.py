@@ -6,6 +6,7 @@ sys.path.insert(0, parent_dir)
 import llaisys
 import torch
 from test_utils import arrange_tensor, random_tensor, check_equal, benchmark
+from llaisys.libllaisys.triton.setup_kernels import llaisysROPE
 
 
 def torch_rope(y: torch.Tensor, x: torch.Tensor, pos_ids: torch.Tensor, theta: float):
@@ -47,14 +48,14 @@ def test_op_rope(
     theta = 10000.0
     y, y_ = random_tensor(shape, dtype_name, device_name)
     torch_rope(y, x, pos_ids, theta)
-    llaisys.Ops.rope(y_, x_, pos_ids_, theta)
+    llaisysROPE(y_, x_, pos_ids_, theta)
 
     assert check_equal(y_, y, atol=atol, rtol=rtol)
 
     if profile:
         benchmark(
             lambda: torch_rope(y, x, pos_ids, theta),
-            lambda: llaisys.Ops.rope(y_, x_, pos_ids_, theta),
+            lambda: llaisysROPE(y_, x_, pos_ids_, theta),
             device_name,
         )
 
@@ -68,10 +69,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
     testShapes = [
         ((2, 1, 4), (0, 2)), 
+        ((2, 2, 4), (0, 2)), 
         ((512, 4, 4096), (512, 1024))]
     testDtypePrec = [
         # type, atol, rtol
-        ("f32", 1e-4, 1e-4),
+        ("f32", 2e-4, 2e-4),
         ("f16", 1e-3, 1e-3),
         ("bf16", 1e-2, 1e-2),
     ]

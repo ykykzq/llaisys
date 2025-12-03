@@ -8,6 +8,7 @@ from .kernels import swiglu
 from .kernels import linear
 from .kernels import embedding
 from .kernels import rms_norm
+from .kernels import rope
 from ...libllaisys.llaisys_types import DataType
 
 
@@ -232,4 +233,33 @@ def llaisysRMSNorm(out, x, weight, eps):
         out_ptr, x_ptr, weight_ptr, eps,
         *out.strides(), *x.strides(), *weight.strides(),
         len_m, len_n, DTYPE=dtype,
+        )
+
+def llaisysROPE(out, x, pos_ids, theta):
+    assert pos_ids.dtype() == DataType.I64
+    assert out.shape() == x.shape()
+    assert len(out.shape()) == 3
+    assert x.shape()[2] % 2 == 0 # embed_dim
+    len_seq, len_h, len_d = out.shape()
+    assert pos_ids.shape()[0] == len_seq
+
+    out_ptr = out.data_ptr()
+    x_ptr = x.data_ptr()
+    pos_ids_ptr = pos_ids.data_ptr()
+    dtype = _llaisys_dtype_to_triton_dtype(out.dtype())
+
+    # 在 seq_len, d 维度和 head 上并行
+    def grid(meta):
+        return(
+            triton.cdiv(len_seq, meta["BLOCK_SIZE_M"]),
+            triton.cdiv(len_d // 2, meta["BLOCK_SIZE_D"]),
+            len_h,
+        )
+
+    rope.kernel[grid](
+        out_ptr, x_ptr, pos_ids_ptr, theta,
+        *out.strides(), *x.strides(), *pos_ids.strides(),
+        len_seq, len_h, len_d,
+        DTYPE=dtype,
     )
+    return out
