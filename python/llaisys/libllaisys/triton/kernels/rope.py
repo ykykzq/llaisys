@@ -91,23 +91,23 @@ def kernel(
     )
 
     # 加载 x_a 和 x_b 块
-    x_a_block = tl.load(x_a_block_ptr, boundary_check=(0,1))
-    x_b_block = tl.load(x_b_block_ptr, boundary_check=(0,1))
+    x_a_block = tl.load(x_a_block_ptr, boundary_check=(0,1)).to(tl.float64)
+    x_b_block = tl.load(x_b_block_ptr, boundary_check=(0,1)).to(tl.float64)
 
-    pos_block = tl.load(pos_block_ptr, boundary_check=(0,))
+    pos_block = tl.load(pos_block_ptr, boundary_check=(0,)).to(tl.float64)
 
     # j 索引：全局索引，从 offset_d 开始
     j = offset_d + tl.arange(0, BLOCK_SIZE_D)
-    theta_f = tl.full((), theta, tl.float32)
+    theta_f = tl.full((), theta.to(tl.float64), tl.float64)
     # 计算：phi = p / theta^(2j/d)
     inv_freq = tl.exp((-2.0 * j / len_d) * tl.log(theta_f))  # (BLOCK_SIZE_D,)
-    freqs = pos_block.to(tl.float32)[:, None] * inv_freq[None, :]  # (BLOCK_SIZE_M, BLOCK_SIZE_D)
+    freqs = pos_block.to(tl.float64)[:, None] * inv_freq.to(tl.float64)[None, :]  # (BLOCK_SIZE_M, BLOCK_SIZE_D)
 
     sin = tl.sin(freqs)
     cos = tl.cos(freqs)
 
-    new_x_a_block = (x_a_block * cos - x_b_block * sin).to(dtype)
-    new_x_b_block = (x_b_block * cos + x_a_block * sin).to(dtype)
+    new_x_a_block = (x_a_block * cos - x_b_block * sin).to(tl.float32).to(dtype)
+    new_x_b_block = (x_b_block * cos + x_a_block * sin).to(tl.float32).to(dtype)
 
     tl.store(out_a_block_ptr, new_x_a_block, boundary_check=(0,1))
     tl.store(out_b_block_ptr, new_x_b_block, boundary_check=(0,1))

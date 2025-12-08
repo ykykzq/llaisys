@@ -12,7 +12,7 @@ import triton.language as tl
             num_warps=num_warps,
         )
         for block_size_m, block_size_n, block_size_k, num_stages, num_warps in itertools.product(
-            (32, 64, 128, 256), (32, 64, 128), (32, 64, 128), (2, 3, 4, 5), (4, 8)
+            (64, 128), (64, 128), (128, 256), (2, 3, 4), (4, 8)
         )
     ],
     key=["out_stride_m", "out_stride_n"],
@@ -73,10 +73,10 @@ def kernel(
     acc = tl.zeros((BLOCK_SIZE_M, BLOCK_SIZE_N), dtype=tl.float64)
         
     for k_idx in range(0, tl.cdiv(len_k, BLOCK_SIZE_K)):
-        x_block = tl.load(x_block_ptr, boundary_check=(0, 1))
-        weight_block = tl.load(weight_block_ptr, boundary_check=(0, 1))
+        x_block = tl.load(x_block_ptr, boundary_check=(0, 1)).to(tl.float32)
+        weight_block = tl.load(weight_block_ptr, boundary_check=(0, 1)).to(tl.float32) 
         
-        acc += tl.dot(x_block.to(tl.float64), weight_block.to(tl.float64))
+        acc += tl.dot(x_block, weight_block).to(tl.float64)
 
         x_block_ptr = tl.advance(x_block_ptr, (0, BLOCK_SIZE_K))
         weight_block_ptr = tl.advance(weight_block_ptr, (BLOCK_SIZE_K, 0))
@@ -93,7 +93,13 @@ def kernel(
         bias_block = tl.load(bias_block_ptr, boundary_check=(0))
         acc += bias_block.to(tl.float64)[None, :]
     
-    acc = acc.to(dtype)
+    # i hate triton......
+    if dtype == tl.bfloat16:
+        acc = acc.to(tl.float32).to(dtype)
+    elif dtype == tl.float16:
+        acc = acc.to(tl.float32).to(dtype)
+    else:
+        acc = acc.to(dtype)
 
     out_block_ptr = tl.make_block_ptr(
         base=out_ptr,
@@ -103,4 +109,4 @@ def kernel(
         block_shape=(BLOCK_SIZE_M, BLOCK_SIZE_N),
         order=(1, 0),
     )
-    tl.store(out_block_ptr, acc.to(dtype), boundary_check=(0, 1))
+    tl.store(out_block_ptr, acc, boundary_check=(0, 1))
