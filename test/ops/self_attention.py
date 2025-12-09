@@ -78,7 +78,7 @@ if __name__ == "__main__":
     ]
     testDtypePrec = [
         # type, atol, rtol
-        ("f32", 5e-4, 5e-4),
+        ("f32", 1e-4, 1e-4),
         ("f16", 1e-3, 1e-3),
         ("bf16", 1e-2, 1e-2),
     ]

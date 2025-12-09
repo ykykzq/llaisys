@@ -12,7 +12,7 @@ import triton.language as tl
             num_warps=num_warps,
         )
         for block_size_m, block_size_n, num_stages, num_warps in itertools.product(
-            (32, 64, 128, 256), (32, 64, 128), (2, 3, 4, 5), (4, 8)
+            (32, 64, 128), (32, 64, 128), (2, 3, 4), (4, 8)
         )
     ],
     key=["EMB_DIM"],
@@ -105,7 +105,7 @@ def kernel(
     for i in range(0, tl.cdiv(seq_len_k_v, BLOCK_SIZE_N)):
 
         k = tl.load(k_block_ptr, boundary_check=(0, 1))
-        qk = tl.dot(q, k)
+        qk = tl.dot(q, k, input_precision="ieee")
         
 
         m_global = tl.arange(0, BLOCK_SIZE_M) + offs_m_start
@@ -121,7 +121,7 @@ def kernel(
 
         v = tl.load(v_block_ptr, boundary_check=(0, 1))
         alpha = tl.exp((m_i - m_ij).to(tl.float32)).to(DTYPE)
-        pv = tl.dot(p.to(v_block_ptr.type.element_ty), v).to(DTYPE)
+        pv = tl.dot(p.to(v_block_ptr.type.element_ty), v, input_precision="ieee").to(DTYPE)
         acc = (acc * alpha[:, None] + pv).to(DTYPE)
         m_i = m_ij.to(DTYPE)
         l_i = (l_i * alpha + l_ij).to(DTYPE)

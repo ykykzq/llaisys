@@ -12,7 +12,7 @@ import triton.language as tl
             num_warps=num_warps,
         )
         for block_size_m, block_size_n, block_size_k, num_stages, num_warps in itertools.product(
-            (64, 128), (64, 128), (128, 256), (2, 3, 4), (4, 8)
+            (64, 128), (64, 128), (128,), (2, 3), (4, 8)
         )
     ],
     key=["out_stride_m", "out_stride_n"],
@@ -76,7 +76,7 @@ def kernel(
         x_block = tl.load(x_block_ptr, boundary_check=(0, 1)).to(tl.float32)
         weight_block = tl.load(weight_block_ptr, boundary_check=(0, 1)).to(tl.float32) 
         
-        acc += tl.dot(x_block, weight_block).to(tl.float64)
+        acc += tl.dot(x_block, weight_block, input_precision="ieee").to(tl.float64)
 
         x_block_ptr = tl.advance(x_block_ptr, (0, BLOCK_SIZE_K))
         weight_block_ptr = tl.advance(weight_block_ptr, (BLOCK_SIZE_K, 0))
