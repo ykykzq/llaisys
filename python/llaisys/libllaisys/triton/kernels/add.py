@@ -72,5 +72,5 @@ def kernel(
     x_block = tl.load(x_block_ptr, boundary_check=(0, 1))
     y_block = tl.load(y_block_ptr, boundary_check=(0, 1))
     output_block = x_block + y_block
-    tl.store(output_block_ptr, output_block)
+    tl.store(output_block_ptr, output_block,boundary_check=(0, 1))
     

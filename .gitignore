@@ -24,7 +24,7 @@ __pycache__/
 
 # Cache
 cache/
-model/
+.model/
 
 # JSON
 *.json

@@ -48,7 +48,7 @@ def kernel(
     max_val = tl.max(vals_block, axis=0).to(dtype)
     max_idx = tl.argmax(vals_block, axis=0).to(idx_dtype)
 
-    tl.store(max_idx_ptr, max_idx)
-    tl.store(max_val_ptr, max_val)
+    tl.store(max_idx_ptr, max_idx,boundary_check=(0,))
+    tl.store(max_val_ptr, max_val,boundary_check=(0,))
 
 
