@@ -1,4 +1,3 @@
-import itertools
 import triton
 import triton.language as tl
 
@@ -6,12 +5,9 @@ import triton.language as tl
 @triton.autotune(
     configs=[
         triton.Config(
-            {"BLOCK_SIZE_M": block_size_m,"BLOCK_SIZE_N": block_size_n},
-            num_stages=num_stages,
-            num_warps=num_warps,
-        )
-        for block_size_m, block_size_n, num_stages, num_warps in itertools.product(
-            (32, 64, 128, 256), (32, 64, 128, 256), (2, 3, 4, 5), (4, 8)
+            {"BLOCK_SIZE_M": 32, "BLOCK_SIZE_N": 32},
+            num_stages=2,
+            num_warps=4,
         )
     ],
     key=["output_stride_m", "output_stride_n"]
