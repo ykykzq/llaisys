@@ -9,6 +9,7 @@ from .kernels import linear
 from .kernels import embedding
 from .kernels import rms_norm
 from .kernels import rope
+from .kernels import scalar_div
 from ...libllaisys.llaisys_types import DataType
 
 
@@ -71,6 +72,42 @@ def llaisysAdd(x, y, output):
     )
 
     return output
+
+def llaisysScalarDiv(x, y, output):
+    
+    assert x.shape() == output.shape()
+    assert len(x.shape()) == 1
+    
+    # 检查所有输入的数据类型是否一致
+    x_dtype = x.dtype()
+    output_dtype = output.dtype()
+    assert x_dtype == output_dtype, \
+        f"All tensors must have the same dtype, got x={x_dtype}, output={output_dtype}"
+
+    len_m = x.shape()[0]
+    
+    # 获取数据指针
+    x_ptr = x.data_ptr()
+    output_ptr = output.data_ptr()
+    
+    # 将 llaisys DataType 转换为 triton dtype
+    triton_dtype = _llaisys_dtype_to_triton_dtype(x_dtype)
+    
+    def grid(meta):
+        return (
+            triton.cdiv(len_m, meta["BLOCK_SIZE_M"]),
+        )
+
+    scalar_div.scalar_div_kernel[grid](
+        x_ptr, output_ptr, y,
+        *x.strides(),
+        *output.strides(),
+        len_m,
+        DTYPE=triton_dtype,
+    )
+
+    return output
+
 
 # 目前只支持1D tensor
 def llaisysArgmax(vals, max_idx, max_val):

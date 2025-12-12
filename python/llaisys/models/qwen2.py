@@ -623,19 +623,21 @@ class Qwen2:
     def _sample_token(
         self, logits: Tensor, top_k: int, top_p: float, temperature: float
     ) -> int:
-        if temperature <= 0:
+        if temperature <= 0 :
             temperature = 1.0
-        if temperature != 1.0:
-            # to be implemented
-            pass
 
-        vocab_size = logits.shape()[1]
+        #[1,151936] -> [151936,]
+        logits = logits.view(logits.shape()[1],)
+        vocab_size = logits.shape()[0]
+
         scores = Tensor(
                 (vocab_size,),
                 dtype=self.model_dtype,
                 device=self.device,
                 device_id=self.device_id,
             )
+        
+        Ops.scalar_div(scores, logits, temperature)
         self.runtime.memcpy_sync(scores.data_ptr(), logits.data_ptr(),_prod(scores.shape()) * _dtype_size(self.model_dtype), MemcpyKind.H2H)
 
         

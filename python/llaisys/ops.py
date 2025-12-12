@@ -21,6 +21,7 @@ try:
     from .libllaisys.triton import (
         llaisysAdd as triton_add,
         llaisysArgmax as triton_argmax,
+        llaisysScalarDiv as triton_scalar_div,
         llaisysEmbedding as triton_embedding,
         llaisysLinear as triton_linear,
         llaisysRMSNorm as triton_rms_norm,
@@ -45,6 +46,13 @@ class Ops:
             triton_add(a, b, c)
         else:
             _CURRENT_LIB.llaisysAdd(c.lib_tensor(), a.lib_tensor(), b.lib_tensor())
+
+    @staticmethod
+    def scalar_div(c: Tensor, a: Tensor, b: float):
+        if _use_triton(c):
+            triton_scalar_div(a, b, c)
+        else:
+            raise NotImplementedError("Scalar division is not implemented for this device.")
 
     @staticmethod
     def argmax(max_idx: Tensor, max_val: Tensor, vals: Tensor):
