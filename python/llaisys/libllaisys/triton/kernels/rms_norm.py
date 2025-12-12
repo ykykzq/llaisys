@@ -15,7 +15,7 @@ import triton.language as tl
 
 
 @triton.jit
-def kernel(
+def rms_norm_kernel(
     out_ptr,
     x_ptr,
     weight_ptr,

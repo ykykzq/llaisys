@@ -37,6 +37,7 @@ cache/
 __pycache__/
 *.py[cod]
 *$py.class
+report.nsys-rep
 
 # Distribution / packaging
 build/

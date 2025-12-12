@@ -14,7 +14,7 @@ import triton.language as tl
 
 
 @triton.jit
-def kernel(
+def rope_kernel(
     out_ptr, 
     x_ptr, 
     pos_ids_ptr, 

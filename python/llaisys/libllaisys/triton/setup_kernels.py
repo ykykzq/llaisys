@@ -61,7 +61,7 @@ def llaisysAdd(x, y, output):
             triton.cdiv(len_n, meta["BLOCK_SIZE_N"]),
         )
 
-    add.kernel[grid](
+    add.add_kernel[grid](
         x_ptr, y_ptr, output_ptr,
         *x.strides(),
         *y.strides(),
@@ -87,7 +87,7 @@ def llaisysArgmax(vals, max_idx, max_val):
     max_idx_ptr = max_idx.data_ptr()
     max_val_ptr = max_val.data_ptr()
 
-    argmax.kernel[grid](vals_ptr, max_idx_ptr, max_val_ptr, len_vals, DTYPE=val_dtype, IDX_DTYPE=idx_dtype)
+    argmax.argmax_kernel[grid](vals_ptr, max_idx_ptr, max_val_ptr, len_vals, DTYPE=val_dtype, IDX_DTYPE=idx_dtype)
     return max_idx, max_val
 
 
@@ -116,7 +116,7 @@ def llaisysSelfAttention(o, q, k, v, scale=None):
             num_q_heads,
         )
 
-    self_attention.kernel[grid](
+    self_attention.self_attention_kernel[grid](
         q_ptr,
         k_ptr,
         v_ptr,
@@ -148,7 +148,7 @@ def llaisysSwiGLU(out, gate, up):
             triton.cdiv(intermediate_size, meta["BLOCK_SIZE_N"]),
         )
 
-    swiglu.kernel[grid](
+    swiglu.swiglu_kernel[grid](
         out_ptr, 
         gate_ptr, 
         up_ptr, 
@@ -181,7 +181,7 @@ def llaisysLinear(out, x, weight, bias):
         )
 
 
-    linear.kernel[grid](
+    linear.linear_kernel[grid](
         out_ptr, x_ptr, 
         weight_ptr, bias_ptr, 
         *out.strides(), *x.strides(), *weight.strides(), 
@@ -208,7 +208,7 @@ def llaisysEmbedding(out, index, weight):
         triton.cdiv(len_d, meta["BLOCK_SIZE_D"]),
     )
 
-    embedding.kernel[grid](
+    embedding.embedding_kernel[grid](
         out_ptr, index_ptr, weight_ptr,
         *out.strides(), *index.strides(), *weight.strides(),
         len_n, len_d, len_v,
@@ -229,7 +229,7 @@ def llaisysRMSNorm(out, x, weight, eps):
             triton.cdiv(len_m, meta["BLOCK_SIZE_M"]),
         )
 
-    rms_norm.kernel[grid](
+    rms_norm.rms_norm_kernel[grid](
         out_ptr, x_ptr, weight_ptr, eps,
         *out.strides(), *x.strides(), *weight.strides(),
         len_m, len_n, DTYPE=dtype,
@@ -256,7 +256,7 @@ def llaisysROPE(out, x, pos_ids, theta):
             len_h,
         )
 
-    rope.kernel[grid](
+    rope.rope_kernel[grid](
         out_ptr, x_ptr, pos_ids_ptr, theta,
         *out.strides(), *x.strides(), *pos_ids.strides(),
         len_seq, len_h, len_d,

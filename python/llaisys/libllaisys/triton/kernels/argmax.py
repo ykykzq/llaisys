@@ -4,7 +4,7 @@ import triton.language as tl
 
 
 @triton.jit
-def kernel(
+def argmax_kernel(
     vals_ptr,
     max_idx_ptr,
     max_val_ptr,

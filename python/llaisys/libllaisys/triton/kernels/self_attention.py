@@ -15,7 +15,7 @@ import triton.language as tl
 
 
 @triton.jit
-def kernel(
+def self_attention_kernel(
     q_ptr,
     k_ptr,
     v_ptr,

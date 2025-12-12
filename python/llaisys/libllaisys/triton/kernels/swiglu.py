@@ -15,7 +15,7 @@ import triton.language as tl
 
 
 @triton.jit
-def kernel(
+def swiglu_kernel(
     out_ptr,
     gate_ptr,
     up_ptr,

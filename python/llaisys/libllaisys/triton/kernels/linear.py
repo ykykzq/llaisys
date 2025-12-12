@@ -15,7 +15,7 @@ import triton.language as tl
 
 
 @triton.jit
-def kernel(
+def linear_kernel(
     out_ptr,
     x_ptr,
     weight_ptr,

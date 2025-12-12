@@ -15,7 +15,7 @@ import triton.language as tl
 
 
 @triton.jit
-def kernel(
+def embedding_kernel(
     out_ptr,
     index_ptr,
     weight_ptr,
