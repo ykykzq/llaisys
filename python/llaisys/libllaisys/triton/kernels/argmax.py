@@ -11,6 +11,7 @@ def argmax_kernel(
     len: tl.constexpr,
     DTYPE: tl.constexpr,
     IDX_DTYPE: tl.constexpr = tl.int64,
+    BLOCK_SIZE: tl.constexpr = 128
 ):
     dtype = DTYPE
     idx_dtype = IDX_DTYPE
@@ -18,37 +19,26 @@ def argmax_kernel(
     max_idx_ptr = max_idx_ptr.to(tl.pointer_type(idx_dtype))
     max_val_ptr = max_val_ptr.to(tl.pointer_type(dtype))
 
-    vals_ptr = tl.make_block_ptr(
-        base=vals_ptr,
-        shape=(len,),
-        strides=(1,),
-        offsets=(0,),
-        block_shape=(len,),
-        order=(0,),
-    )
-    max_idx_ptr = tl.make_block_ptr(
-        base=max_idx_ptr,
-        shape=(1,),
-        strides=(1,),
-        offsets=(0,),
-        block_shape=(1,),
-        order=(0,),
-    )
-    max_val_ptr = tl.make_block_ptr(
-        base=max_val_ptr,
-        shape=(1,),
-        strides=(1,),
-        offsets=(0,),
-        block_shape=(1,),
-        order=(0,),
-    )
-
-    vals_block = tl.load(vals_ptr, boundary_check=(0,))
-
-    max_val = tl.max(vals_block, axis=0).to(dtype)
-    max_idx = tl.argmax(vals_block, axis=0).to(idx_dtype)
-
-    tl.store(max_idx_ptr, max_idx,boundary_check=(0,))
-    tl.store(max_val_ptr, max_val,boundary_check=(0,))
+    pid = tl.program_id(0)
+    block_start = pid * BLOCK_SIZE
+    
+    max_val = tl.full([], float('-inf'), dtype=dtype)
+    max_idx = tl.full([], 0, dtype=idx_dtype)
+    
+    for i in range(0, len, BLOCK_SIZE):
+        idx = i + tl.arange(0, BLOCK_SIZE)
+        mask = idx < len
+        
+        vals = tl.load(vals_ptr + idx, mask=mask, other=float('-inf'))
+        
+        block_max_val = tl.max(vals, axis=0).to(dtype)
+        block_max_idx = tl.argmax(vals, axis=0).to(idx_dtype)
+        
+        condition = block_max_val > max_val
+        max_val = tl.where(condition, block_max_val, max_val).to(dtype)
+        max_idx = tl.where(condition, i + block_max_idx, max_idx).to(idx_dtype)
+    
+    tl.store(max_idx_ptr, max_idx)
+    tl.store(max_val_ptr, max_val)
 
 

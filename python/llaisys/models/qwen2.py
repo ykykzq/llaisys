@@ -623,39 +623,43 @@ class Qwen2:
     def _sample_token(
         self, logits: Tensor, top_k: int, top_p: float, temperature: float
     ) -> int:
-        scores = self._tensor_to_numpy(logits)[-1].astype(np.float64)
         if temperature <= 0:
             temperature = 1.0
         if temperature != 1.0:
-            scores = scores / temperature
+            # to be implemented
+            pass
 
-        vocab = scores.shape[-1]
-        top_k = max(1, min(top_k, vocab))
+        vocab_size = logits.shape()[1]
+        scores = Tensor(
+                (vocab_size,),
+                dtype=self.model_dtype,
+                device=self.device,
+                device_id=self.device_id,
+            )
+        self.runtime.memcpy_sync(scores.data_ptr(), logits.data_ptr(),_prod(scores.shape()) * _dtype_size(self.model_dtype), MemcpyKind.H2H)
+
+        
+        top_k = max(1, min(top_k, vocab_size))
 
         if top_k == 1:
-            return int(np.argmax(scores))
+            max_idx = Tensor(
+                (1,),
+                dtype=DataType.I64,
+                device=self.device,
+                device_id=self.device_id,
+            )
+            max_val = Tensor(
+                (1,),
+                dtype=self.model_dtype,
+                device=self.device,
+                device_id=self.device_id,
+            )
+           
+            Ops.argmax(max_idx, max_val, scores)
+            return int(self._tensor_to_numpy(max_idx)[0])
+        else:
+            raise NotImplementedError("Top-k sampling is not implemented.")
 
-        idx = np.argpartition(-scores, top_k - 1)[:top_k]
-        idx_scores = scores[idx]
-        order = np.argsort(-idx_scores)
-        idx = idx[order]
-        idx_scores = idx_scores[order]
-
-        max_score = idx_scores[0]
-        probs = np.exp(idx_scores - max_score)
-        probs = probs / probs.sum()
-
-        if top_p < 1.0:
-            cumulative = np.cumsum(probs)
-            keep = cumulative <= top_p
-            if not keep.any():
-                keep[0] = True
-            idx = idx[keep]
-            probs = probs[keep]
-            probs = probs / probs.sum()
-
-        choice = np.random.choice(idx, p=probs)
-        return int(choice)
 
     def generate(
         self,
