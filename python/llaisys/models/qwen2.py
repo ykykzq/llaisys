@@ -638,7 +638,6 @@ class Qwen2:
             )
         
         Ops.scalar_div(scores, logits, temperature)
-        self.runtime.memcpy_sync(scores.data_ptr(), logits.data_ptr(),_prod(scores.shape()) * _dtype_size(self.model_dtype), MemcpyKind.H2H)
 
         
         top_k = max(1, min(top_k, vocab_size))
@@ -660,7 +659,40 @@ class Qwen2:
             Ops.argmax(max_idx, max_val, scores)
             return int(self._tensor_to_numpy(max_idx)[0])
         else:
-            raise NotImplementedError("Top-k sampling is not implemented.")
+            topk_scores = Tensor(
+                (vocab_size,),
+                dtype=self.model_dtype,
+                device=self.device,
+                device_id=self.device_id,
+            )
+            
+            # top-k
+            Ops.topk_mask(topk_scores, scores, top_k)
+            
+            # softmax
+            probs = Tensor(
+                (vocab_size,),
+                dtype=self.model_dtype,
+                device=self.device,
+                device_id=self.device_id,
+            )
+            Ops.softmax(probs.view(1,vocab_size), topk_scores.view(1,vocab_size))
+            
+            probs_np = self._tensor_to_numpy(probs.view(vocab_size,))
+            
+            # 使用numpy进行采样
+            # 过滤掉概率为0或负无穷的位置
+            valid_mask = np.isfinite(probs_np) & (probs_np > 0)
+            valid_indices = np.where(valid_mask)[0]
+            valid_probs = probs_np[valid_mask]
+            
+            # 归一化概率
+            valid_probs = valid_probs / valid_probs.sum()
+            
+            # 采样
+            sampled_idx = np.random.choice(valid_indices, p=valid_probs)
+            
+            return int(sampled_idx)
 
 
     def generate(

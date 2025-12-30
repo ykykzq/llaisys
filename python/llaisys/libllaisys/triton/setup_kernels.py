@@ -10,6 +10,8 @@ from .kernels import embedding
 from .kernels import rms_norm
 from .kernels import rope
 from .kernels import scalar_div
+from .kernels import softmax
+from .kernels import topk
 from ...libllaisys.llaisys_types import DataType
 
 
@@ -298,5 +300,53 @@ def llaisysROPE(out, x, pos_ids, theta):
         *out.strides(), *x.strides(), *pos_ids.strides(),
         len_seq, len_h, len_d,
         DTYPE=dtype,
+    )
+    return out
+
+
+def llaisysSoftmax(out, input):
+    # online-softmax
+    assert len(input.shape()) == 2
+    assert input.shape() == out.shape()
+    
+    len_m, len_n = input.shape()
+    val_dtype = _llaisys_dtype_to_triton_dtype(input.dtype())
+    
+    out_ptr = out.data_ptr()
+    input_ptr = input.data_ptr()
+    
+    def grid(meta):
+        return (
+            triton.cdiv(len_m, meta["BLOCK_SIZE_M"]),
+        )
+    
+    softmax.softmax_kernel[grid](
+        out_ptr, input_ptr, 
+        *out.strides(), *input.strides(),
+        len_m, len_n, 
+        DTYPE=val_dtype
+    )
+    return out
+
+
+def llaisysTopKMask(out, inp, k):
+    # input: [vocab_size,]
+    assert len(inp.shape()) == 1
+    assert inp.shape() == out.shape()
+    
+    len_vals = inp.shape()[0]
+    val_dtype = _llaisys_dtype_to_triton_dtype(inp.dtype())
+    idx_dtype = tl.int64
+    
+    out_ptr = out.data_ptr()
+    inp_ptr = inp.data_ptr()
+    
+    
+    def grid(meta):
+        return (1,)
+    
+    topk.topk_mask_kernel[grid](
+        out_ptr, inp_ptr, k, len_vals, 
+        DTYPE=val_dtype, IDX_DTYPE=idx_dtype
     )
     return out

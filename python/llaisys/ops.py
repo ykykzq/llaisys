@@ -28,6 +28,8 @@ try:
         llaisysROPE as triton_rope,
         llaisysSelfAttention as triton_self_attention,
         llaisysSwiGLU as triton_swiglu,
+        llaisysSoftmax as triton_softmax,
+        llaisysTopKMask as triton_topk_mask,
     )
     TRITON_AVAILABLE = True
 except ImportError:
@@ -120,3 +122,17 @@ class Ops:
             triton_swiglu(out, gate, up)
         else:
             _CURRENT_LIB.llaisysSwiGLU(out.lib_tensor(), gate.lib_tensor(), up.lib_tensor())
+
+    @staticmethod
+    def softmax(out: Tensor, inp: Tensor):
+        if _use_triton(out):
+            triton_softmax(out, inp)
+        else:
+            raise NotImplementedError("Softmax is not implemented for this device.")
+
+    @staticmethod
+    def topk_mask(out: Tensor, inp: Tensor, k: int):
+        if _use_triton(out):
+            triton_topk_mask(out, inp, k)
+        else:
+            raise NotImplementedError("TopK mask is not implemented for this device.")
