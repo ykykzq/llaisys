@@ -1,0 +1,24 @@
+# Web框架和服务器
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+
+# 模型和分词器
+transformers>=4.35.0
+huggingface_hub>=0.19.0
+torch>=2.4.0
+accelerate>=0.25.0
+
+# 数据处理
+numpy>=1.24.0
+safetensors>=0.4.0
+
+# GPU加速（可选，用于NVIDIA GPU）
+# 如果使用CPU，可以注释掉以下两行
+triton>=2.1.0
+ninetoothed>=0.1.0
+
+# 测试和开发工具（可选）
+# 如果只运行服务器，可以注释掉以下依赖
+httpx>=0.25.0
+colorama>=0.4.6
